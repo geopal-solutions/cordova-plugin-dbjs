@@ -1,6 +1,6 @@
 {
-  "name": "dbjs",
-  "version": "0.0.1",
+  "name": "cordova-plugin-dbjs",
+  "version": "v1.0.0-geopal",
   "description": "A minimalistic database manager API",
   "cordova": {
     "id": "cordova-plugin-dbjs",
@@ -12,8 +12,18 @@
   "keywords": [
     "ecosystem:cordova",
     "cordova-ios",
-    "cordova-android"
+    "cordova-android",
+    "dbjs",
+    "database",
+    "sqllite",
+    "sqlcipher",
+    "query",
+    "sql"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geopal-solutions/cordova-plugin-dbjs.git"
+  },  
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 }
