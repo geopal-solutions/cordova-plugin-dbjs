@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="format-detection" content="telephone=no">
+        <meta name="msapplication-tap-highlight" content="no">
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+        <style type="text/css">
+            th { font-weight: bold; }
+            td.pass { background-color: #009900; color: white; }
+            td.fail { background-color: red; color: white; font-weight: bold; }
+            td.skip { background-color: gray; }
+        </style>
+
+        <title>GeoPal Platform</title>
+    </head>
+    <body>
+        <script type="text/javascript" src="dbjs.js"></script>
+        <script type="text/javascript" src="datasources.js"></script>
+        <table width="100%">
+            <thead>
+                <tr><th>Test name</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Has table (scalar)</td><td id="has_table_result"></td></tr>
+                <tr><td>Create table (execute)</td><td id="create_table_result"></td></tr>
+                <tr><td>Truncate table (execute)</td><td id="truncate_table_result"></td></tr>
+                <tr><td>Insert into table (execute)</td><td id="insert_into_table_result"></td></tr>
+                <tr><td>Select items (list)</td><td id="list_result"></td></tr>
+                <tr><td>Select exactly one item (unique)</td><td id="unique_result"></td></tr>
+                <tr><td>Select exactly one item (unique) - err</td><td id="unique_err_result"></td></tr>
+                <tr><td>Select first item (first)</td><td id="first_result"></td></tr>
+                <tr><td>Select first item (first) - err</td><td id="first_err_result"></td></tr>
+            </tbody>
+        </table>
+
+        <script type="text/javascript">
+
+        function el(id) {
+            return document.getElementById(id);
+        }
+
+        function pass(id, msg) {
+            el(id).className = "pass";
+            el(id).innerHTML = msg || "Pass";
+        }
+        function fail(id, msg) {
+            el(id).className = "fail";
+            el(id).innerHTML = msg || "Fail";
+        }
+        function skip(id, msg) {
+            el(id).className = "skip";
+            el(id).innerHTML = msg || "Skip";
+        }
+
+        function fnpass(id, msg) {
+            return function() {
+                pass(id, msg);
+            };
+        }
+        function fnfail(id, msg) {
+            return function() {
+                fail(id, msg);
+            };
+        }
+        function fnskip(id, msg) {
+            return function() {
+                skip(id, msg);
+            };
+        }
+
+        function okpromise(result) {
+            return new Promise(function(successCallback, failureCallback) {
+                successCallback(result);
+            });
+        }
+
+        function copyrows(rows, filterfn) {
+            var index = 0;
+            var row = null;
+            var result = [];
+            while((row = rows.item(index++)) != null) {
+                if(typeof(filterfn) === 'undefined' || filterfn(row) !== false) {
+                    result.push(row);
+                }
+            }
+            return result;
+        };
+
+        function objequals(obj1, obj2) {
+            for(var key in obj1) {
+                var prop2 = obj2[key];
+                if(typeof(prop2) === 'undefined') {
+                    return false;
+                }
+            }
+            for(var key in obj2) {
+                var prop1 = obj1[key];
+                if(typeof(prop1) === 'undefined') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        function has_table() {
+            var p = db().scalar("has_table.sql", { name: "people" });
+            p.then(fnpass("has_table_result"), fnfail("has_table_result"));
+            return p;
+        }
+        function create_table() {
+            var p = db().execute("create_people_table.sql");
+            p.then(fnpass("create_table_result"), fnfail("create_table_result"));
+            return p;
+        }
+        function truncate_table() {
+            var p = db().execute("truncate_people_table.sql");
+            p.then(fnpass("truncate_table_result"), fnfail("truncate_table_result"));
+            return p;
+        }
+        function insert_into_table() {
+            var rows = [
+                { firstname: "Filippo", lastname: "Possenti"  , age: 35  , favnum: 3.14159, nationality: "Italian" },
+                { firstname: "Sean"   , lastname: "O'Reilly"  , age: 36  , favnum: 42     , nationality: "Irish"   },
+                { firstname: "Tara"   , lastname: "Fennell"   , age: null, favnum: 3      , nationality: "Irish"   },
+                { firstname: "Mark"   , lastname: "Mc Cullagh", age: null, favnum: 7      , nationality: "Irish"   },
+                { firstname: "Katja"  , lastname: "Rademacher", age: null, favnum: 2.71828, nationality: "German"  }
+            ];
+
+            var promises = [];
+            for(var i = 0; i < rows.length; i++) {
+                var data = rows[i];
+                var p = db().execute("insert_into_people.sql", data);
+                promises.push(p);
+            }
+
+            var promise = Promise.all(promises);
+            promise.then(fnpass("insert_into_table_result"), fnfail("insert_into_table_result"));
+
+            return promise;
+        }
+        function select_from_table() {
+            var args = {
+                nationality: "Irish",
+                sort: "last_name"
+            };
+            var unfiltered = db().list("select_from_people.sql", {});
+            var filtered = db().list("select_from_people.sql", args);
+            return Promise.all([unfiltered, filtered]).then(function(results) {
+                var unflt = copyrows(results[0], function(row) {
+                    return row.nationality == "Irish";
+                });
+                var flt = copyrows(results[1]);
+                if(flt.length != unflt.length) {
+                    fail("list_result", "Length not matching.");
+                    return;
+                }
+                if(flt.length != 3) {
+                    fail("list_result", "Three rows were expected. Obtained " + flt.length);
+                }
+                for(var i = 0; i < flt.length; i++) {
+                    var row_a = unflt[i];
+                    var row_b = flt[i];
+                    if(!objequals(row_a, row_b)) {
+                        fail("list_result", "Row comparison failed.");
+                    }
+                }
+
+                pass("list_result");
+            }, fnfail("list_result"));
+        }
+        function select_unique() {
+            var args = {
+                lastname: "Possenti"
+            };
+            var p = db().unique("select_from_people.sql", args);
+            p.then(fnpass("unique_result"), fnfail("unique_result"));
+            return p;
+        }
+        function select_unique_non_unique() {
+            var args = {
+                nationality: "Irish"
+            };
+            var p = new Promise(function(successCallback, failureCallback) {
+                db().unique("select_from_people.sql", args).then(failureCallback, successCallback);
+            });
+            p.then(fnpass("unique_err_result"), fnfail("unique_err_result"));
+            return p;
+        }
+        function select_first() {
+            var args = {
+                nationality: "Irish",
+                sort: "favnum asc"
+            };
+            var p = db().first("select_from_people.sql", args);
+            p.then(function(record) {
+                if(record.first_name == "Tara") {
+                    pass("first_result");
+                }
+                else {
+                    fail("first_result", "Wrong record returned. Expected 'Tara', returned '" + record.first_name + "'");
+                }
+            }, fnfail("first_result"));
+            return p;
+        }
+        function select_first_err() {
+            var args = {
+                nationality: "Midgaardian",
+                sort: "favnum asc"
+            };
+            var p = new Promise(function(successCallback, failureCallback) {
+                db().first("select_from_people.sql", args).then(failureCallback, successCallback);
+            });
+            p.then(fnpass("first_err_result"), fnfail("first_err_result"));
+            return p;
+        }
+
+
+        function run_tests() {
+            has_table().then(function(result) {
+                if(result > 0) {
+                    skip("create_table_result");
+                    return okpromise();
+                }
+                else {
+                    return create_table();
+                }
+            })
+            .then(truncate_table)
+            .then(insert_into_table)
+            .then(select_from_table)
+            .then(select_unique)
+            .then(select_unique_non_unique)
+            .then(select_first)
+            .then(select_first_err);
+        }
+
+        run_tests();
+
+            //db("my").list("example.sql", params);
+
+        </script>
+    </body>
+</html>

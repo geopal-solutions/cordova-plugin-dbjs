@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-plugin-dbjs" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+	<name>dbjs</name>
+	<js-module name="dbjs" src="www/dbjs.js">
+		<clobbers target="cordova.plugins.db" />
+	</js-module>
+	<js-module name="dbjsver" src="www/dbjs-ver.js">
+		<clobbers target="cordova.plugins.dbver" />
+	</js-module>
+	<platform name="ios">
+		<config-file parent="/*" target="config.xml">
+			<feature name="dbjs">
+				<param name="ios-package" value="dbjs" />
+				<param name="onload" value="true" />
+			</feature>
+		</config-file>
+		<source-file src="src/ios/dbjs.m" />
+		
+	</platform>
+	<platform name="android">
+		<config-file parent="/*" target="res/xml/config.xml">
+			<feature name="dbjs">
+				<param name="android-package" value="cordova_plugin_dbjs.dbjs" />
+				<param name="onload" value="true" />
+			</feature>
+		</config-file>
+		<config-file parent="/*" target="AndroidManifest.xml"></config-file>
+		<source-file src="src/android/dbjs.java" target-dir="src/cordova_plugin_dbjs/dbjs" />
+	</platform>
+</plugin>

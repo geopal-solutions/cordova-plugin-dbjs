@@ -1,0 +1,19 @@
+{
+  "name": "dbjs",
+  "version": "0.0.1",
+  "description": "A minimalistic database manager API",
+  "cordova": {
+    "id": "cordova-plugin-dbjs",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-ios",
+    "cordova-android"
+  ],
+  "author": "",
+  "license": "ISC"
+}
